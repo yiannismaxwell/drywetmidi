@@ -62,7 +62,9 @@ namespace Melanchall.DryWetMidi.Devices
 
         #region Fields
 
-        private readonly IEnumerator<PlaybackEvent> _eventsEnumerator;
+        private readonly LinkedList<PlaybackEvent> _playbackEvents;
+        private LinkedListNode<PlaybackEvent> _currentPlaybackEvent;
+
         private readonly TimeSpan _duration;
         private readonly long _durationInTicks;
 
@@ -202,15 +204,14 @@ namespace Melanchall.DryWetMidi.Devices
             ThrowIfArgument.IsNull(nameof(timedObjects), timedObjects);
             ThrowIfArgument.IsNull(nameof(tempoMap), tempoMap);
 
-            var playbackEvents = GetPlaybackEvents(timedObjects, tempoMap);
-            _eventsEnumerator = playbackEvents.GetEnumerator();
-            _eventsEnumerator.MoveNext();
+            _playbackEvents = new LinkedList<PlaybackEvent>(GetPlaybackEvents(timedObjects, tempoMap));
+            _currentPlaybackEvent = _playbackEvents.First;
 
-            var lastPlaybackEvent = playbackEvents.LastOrDefault();
+            var lastPlaybackEvent = _playbackEvents.Last.Value;
             _duration = lastPlaybackEvent?.Time ?? TimeSpan.Zero;
             _durationInTicks = lastPlaybackEvent?.RawTime ?? 0;
 
-            _notesMetadata = playbackEvents.Select(e => e.Metadata.Note).Where(m => m != null).ToList();
+            _notesMetadata = _playbackEvents.Select(e => e.Metadata.Note).Where(m => m != null).ToList();
             _notesMetadata.Sort((m1, m2) => m1.StartTime.CompareTo(m2.StartTime));
 
             TempoMap = tempoMap;
@@ -219,7 +220,7 @@ namespace Melanchall.DryWetMidi.Devices
             _clock = new MidiClock(false, clockSettings.CreateTickGeneratorCallback(), ClockInterval);
             _clock.Ticked += OnClockTicked;
 
-            Snapping = new PlaybackSnapping(playbackEvents, tempoMap);
+            Snapping = new PlaybackSnapping(_playbackEvents, tempoMap);
         }
 
         /// <summary>
@@ -699,7 +700,7 @@ namespace Melanchall.DryWetMidi.Devices
             {
                 var time = _clock.CurrentTime;
 
-                var playbackEvent = _eventsEnumerator.Current;
+                var playbackEvent = _currentPlaybackEvent?.Value;
                 if (playbackEvent == null)
                     continue;
 
@@ -736,7 +737,7 @@ namespace Melanchall.DryWetMidi.Devices
 
                 SendEvent(midiEvent);
             }
-            while (_eventsEnumerator.MoveNext());
+            while ((_currentPlaybackEvent = _currentPlaybackEvent.Next) != null);
 
             if (!Loop)
             {
@@ -747,8 +748,7 @@ namespace Melanchall.DryWetMidi.Devices
 
             _clock.Stop();
             _clock.ResetCurrentTime();
-            _eventsEnumerator.Reset();
-            _eventsEnumerator.MoveNext();
+            _currentPlaybackEvent = _playbackEvents.First;
 
             OnRepeatStarted();
             _clock.Start();
@@ -765,9 +765,17 @@ namespace Melanchall.DryWetMidi.Devices
             var convertedTime = (TimeSpan)TimeConverter.ConvertTo<MetricTimeSpan>(time, TempoMap);
             _clock.SetCurrentTime(convertedTime);
 
-            _eventsEnumerator.Reset();
-            do { _eventsEnumerator.MoveNext(); }
-            while (_eventsEnumerator.Current != null && _eventsEnumerator.Current.Time < convertedTime);
+            // TODO: optimize
+            _currentPlaybackEvent = _playbackEvents.First;
+            for (var node = _playbackEvents.First; node != null; node = node.Next)
+            {
+                var playbackEvent = node.Value;
+                if (playbackEvent.Time < convertedTime)
+                    continue;
+
+                _currentPlaybackEvent = node;
+                break;
+            }
         }
 
         private void SendEvent(MidiEvent midiEvent)
@@ -864,7 +872,7 @@ namespace Melanchall.DryWetMidi.Devices
                     playbackEvents.Add(new PlaybackEvent(timedEvent.Event, timedEvent.TimeAs<MetricTimeSpan>(tempoMap), timedEvent.Time));
             }
 
-            return playbackEvents.OrderBy(e => e, new PlaybackEventsComparer()).ToList();
+            return playbackEvents.OrderBy(e => e, new PlaybackEventsComparer()).ToArray();
         }
 
         private static IEnumerable<PlaybackEvent> GetPlaybackEvents(Chord chord, TempoMap tempoMap)
@@ -943,7 +951,6 @@ namespace Melanchall.DryWetMidi.Devices
 
                 _clock.Ticked -= OnClockTicked;
                 _clock.Dispose();
-                _eventsEnumerator.Dispose();
             }
 
             _disposed = true;
