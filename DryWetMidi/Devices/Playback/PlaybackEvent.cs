@@ -1,5 +1,6 @@
 ﻿using System;
 using Melanchall.DryWetMidi.Core;
+using Melanchall.DryWetMidi.Interaction;
 
 namespace Melanchall.DryWetMidi.Devices
 {
@@ -7,8 +8,9 @@ namespace Melanchall.DryWetMidi.Devices
     {
         #region Constructor
 
-        public PlaybackEvent(MidiEvent midiEvent, TimeSpan time, long rawTime)
+        public PlaybackEvent(ITimedObject sourceObject, MidiEvent midiEvent, TimeSpan time, long rawTime)
         {
+            SourceObject = sourceObject;
             Event = midiEvent;
             Time = time;
             RawTime = rawTime;
@@ -18,6 +20,8 @@ namespace Melanchall.DryWetMidi.Devices
 
         #region Properties
 
+        public ITimedObject SourceObject { get; }
+
         public MidiEvent Event { get; }
 
         public TimeSpan Time { get; }
@@ -25,6 +29,15 @@ namespace Melanchall.DryWetMidi.Devices
         public long RawTime { get; }
 
         public PlaybackEventMetadata Metadata { get; } = new PlaybackEventMetadata();
+
+        #endregion
+
+        #region Overrides
+
+        public override string ToString()
+        {
+            return $"Event [{Event}] at [{Time}]";
+        }
 
         #endregion
     }

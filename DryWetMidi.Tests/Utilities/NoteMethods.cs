@@ -29,6 +29,33 @@ namespace Melanchall.DryWetMidi.Tests.Utilities
         #region Fields
 
         private readonly Random _random = new Random();
+        private readonly TempoMap _tempoMap;
+
+        #endregion
+
+        #region Constructor
+
+        public NoteMethods()
+        {
+        }
+
+        public NoteMethods(TempoMap tempoMap)
+        {
+            _tempoMap = tempoMap;
+        }
+
+        #endregion
+
+        #region Methods
+
+        public Note Create(SevenBitNumber noteNumber, ITimeSpan time, ITimeSpan length)
+        {
+            var convertedTime = TimeConverter.ConvertFrom(time, _tempoMap);
+            return new Note(
+                noteNumber,
+                LengthConverter.ConvertFrom(length, convertedTime, _tempoMap),
+                convertedTime);
+        }
 
         #endregion
 

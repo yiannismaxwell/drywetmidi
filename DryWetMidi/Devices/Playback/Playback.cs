@@ -62,16 +62,22 @@ namespace Melanchall.DryWetMidi.Devices
 
         #region Fields
 
-        private readonly LinkedList<PlaybackEvent> _playbackEvents;
+        private LinkedList<PlaybackEvent> _playbackEvents;
         private LinkedListNode<PlaybackEvent> _currentPlaybackEvent;
+        private readonly object _playbackEventsLock = new object();
 
-        private readonly TimeSpan _duration;
-        private readonly long _durationInTicks;
+        private readonly IEnumerable<ITimedObject> _sourceTimedObjects;
+        private readonly ITimedObjectsCollectionChanged _sourceTimedObjectsCollectionChanged;
+
+        private static readonly PlaybackEventsComparer _playbackEventsComparer = new PlaybackEventsComparer();
+
+        private TimeSpan _duration;
+        private long _durationInTicks;
 
         private readonly MidiClock _clock;
 
         private readonly ConcurrentDictionary<NotePlaybackEventMetadata, byte> _activeNotesMetadata = new ConcurrentDictionary<NotePlaybackEventMetadata, byte>();
-        private readonly List<NotePlaybackEventMetadata> _notesMetadata;
+        private List<NotePlaybackEventMetadata> _notesMetadata;
 
         private bool _disposed = false;
 
@@ -204,15 +210,7 @@ namespace Melanchall.DryWetMidi.Devices
             ThrowIfArgument.IsNull(nameof(timedObjects), timedObjects);
             ThrowIfArgument.IsNull(nameof(tempoMap), tempoMap);
 
-            _playbackEvents = new LinkedList<PlaybackEvent>(GetPlaybackEvents(timedObjects, tempoMap));
-            _currentPlaybackEvent = _playbackEvents.First;
-
-            var lastPlaybackEvent = _playbackEvents.Last.Value;
-            _duration = lastPlaybackEvent?.Time ?? TimeSpan.Zero;
-            _durationInTicks = lastPlaybackEvent?.RawTime ?? 0;
-
-            _notesMetadata = _playbackEvents.Select(e => e.Metadata.Note).Where(m => m != null).ToList();
-            _notesMetadata.Sort((m1, m2) => m1.StartTime.CompareTo(m2.StartTime));
+            InitializePlayback(timedObjects, tempoMap);
 
             TempoMap = tempoMap;
 
@@ -221,6 +219,19 @@ namespace Melanchall.DryWetMidi.Devices
             _clock.Ticked += OnClockTicked;
 
             Snapping = new PlaybackSnapping(_playbackEvents, tempoMap);
+
+            //
+
+            _sourceTimedObjectsCollectionChanged = timedObjects as ITimedObjectsCollectionChanged;
+            if (_sourceTimedObjectsCollectionChanged != null)
+            {
+                _sourceTimedObjects = timedObjects;
+
+                _sourceTimedObjectsCollectionChanged.ObjectsAdded += OnObjectsAdded;
+                _sourceTimedObjectsCollectionChanged.ObjectsRemoved += OnObjectsRemoved;
+                _sourceTimedObjectsCollectionChanged.ObjectsTimesChanged += OnObjectsTimesChanged;
+                _sourceTimedObjectsCollectionChanged.CollectionModified += OnCollectionModified;
+            }
         }
 
         /// <summary>
@@ -334,6 +345,8 @@ namespace Melanchall.DryWetMidi.Devices
         /// Gets or sets callback used to process MIDI event to be played.
         /// </summary>
         public EventCallback EventCallback { get; set; }
+
+        public bool TrackSourceObjectsChanges { get; set; } = true;
 
         #endregion
 
@@ -696,62 +709,65 @@ namespace Melanchall.DryWetMidi.Devices
 
         private void OnClockTicked(object sender, EventArgs e)
         {
-            do
+            lock (_playbackEventsLock)
             {
-                var time = _clock.CurrentTime;
-
-                var playbackEvent = _currentPlaybackEvent?.Value;
-                if (playbackEvent == null)
-                    continue;
-
-                if (playbackEvent.Time > time)
-                    return;
-
-                var midiEvent = playbackEvent.Event;
-                if (midiEvent == null)
-                    continue;
-
-                if (!IsRunning)
-                    return;
-
-                Note note;
-                if (TryPlayNoteEvent(playbackEvent, out note))
+                do
                 {
-                    if (note != null)
+                    var time = _clock.CurrentTime;
+
+                    var playbackEvent = _currentPlaybackEvent?.Value;
+                    if (playbackEvent == null)
+                        continue;
+
+                    if (playbackEvent.Time > time)
+                        return;
+
+                    var midiEvent = playbackEvent.Event;
+                    if (midiEvent == null)
+                        continue;
+
+                    if (!IsRunning)
+                        return;
+
+                    Note note;
+                    if (TryPlayNoteEvent(playbackEvent, out note))
                     {
-                        if (playbackEvent.Event is NoteOnEvent)
-                            OnNotesPlaybackStarted(note);
-                        else
-                            OnNotesPlaybackFinished(note);
+                        if (note != null)
+                        {
+                            if (playbackEvent.Event is NoteOnEvent)
+                                OnNotesPlaybackStarted(note);
+                            else
+                                OnNotesPlaybackFinished(note);
+                        }
+
+                        continue;
                     }
 
-                    continue;
+                    var eventCallback = EventCallback;
+                    if (eventCallback != null)
+                        midiEvent = eventCallback(midiEvent.Clone(), playbackEvent.RawTime, time);
+
+                    if (midiEvent == null)
+                        continue;
+
+                    SendEvent(midiEvent);
+                }
+                while ((_currentPlaybackEvent = _currentPlaybackEvent.Next) != null);
+
+                if (!Loop)
+                {
+                    _clock.Stop();
+                    OnFinished();
+                    return;
                 }
 
-                var eventCallback = EventCallback;
-                if (eventCallback != null)
-                    midiEvent = eventCallback(midiEvent.Clone(), playbackEvent.RawTime, time);
-
-                if (midiEvent == null)
-                    continue;
-
-                SendEvent(midiEvent);
-            }
-            while ((_currentPlaybackEvent = _currentPlaybackEvent.Next) != null);
-
-            if (!Loop)
-            {
                 _clock.Stop();
-                OnFinished();
-                return;
+                _clock.ResetCurrentTime();
+                _currentPlaybackEvent = _playbackEvents.First;
+
+                OnRepeatStarted();
+                _clock.Start();
             }
-
-            _clock.Stop();
-            _clock.ResetCurrentTime();
-            _currentPlaybackEvent = _playbackEvents.First;
-
-            OnRepeatStarted();
-            _clock.Start();
         }
 
         private void EnsureIsNotDisposed()
@@ -766,16 +782,7 @@ namespace Melanchall.DryWetMidi.Devices
             _clock.SetCurrentTime(convertedTime);
 
             // TODO: optimize
-            _currentPlaybackEvent = _playbackEvents.First;
-            for (var node = _playbackEvents.First; node != null; node = node.Next)
-            {
-                var playbackEvent = node.Value;
-                if (playbackEvent.Time < convertedTime)
-                    continue;
-
-                _currentPlaybackEvent = node;
-                break;
-            }
+            SetCurrentPlaybackEvent(convertedTime);
         }
 
         private void SendEvent(MidiEvent midiEvent)
@@ -847,6 +854,147 @@ namespace Melanchall.DryWetMidi.Devices
             return true;
         }
 
+        private void InitializePlayback(IEnumerable<ITimedObject> timedObjects, TempoMap tempoMap)
+        {
+            _playbackEvents = new LinkedList<PlaybackEvent>(GetPlaybackEvents(timedObjects, tempoMap));
+            _currentPlaybackEvent = _playbackEvents.First;
+
+            var lastPlaybackEvent = _playbackEvents.Last.Value;
+            _duration = lastPlaybackEvent?.Time ?? TimeSpan.Zero;
+            _durationInTicks = lastPlaybackEvent?.RawTime ?? 0;
+
+            _notesMetadata = _playbackEvents.Select(e => e.Metadata.Note).Where(m => m != null).ToList();
+            _notesMetadata.Sort((m1, m2) => m1.StartTime.CompareTo(m2.StartTime));
+        }
+
+        private void OnCollectionModified(object sender, EventArgs e)
+        {
+            if (!TrackSourceObjectsChanges)
+                return;
+
+            lock (_playbackEventsLock)
+            {
+                InitializePlayback(_sourceTimedObjects, TempoMap);
+            }
+        }
+
+        private void OnObjectsTimesChanged(object sender, ICollection<ITimedObject> timedObjects)
+        {
+            if (!TrackSourceObjectsChanges)
+                return;
+
+            lock (_playbackEventsLock)
+            {
+                var timedObjectsEnumerator = timedObjects.OrderBy(o => o.Time).GetEnumerator();
+                var timedObjectsEndNotReached = timedObjectsEnumerator.MoveNext();
+
+                for (var node = _playbackEvents.First; node != null && timedObjectsEndNotReached; node = node.Next)
+                {
+                    if (node.Value.SourceObject == timedObjectsEnumerator.Current)
+                    {
+                        // TODO: replace
+                        timedObjectsEndNotReached = timedObjectsEnumerator.MoveNext();
+                    }
+                }
+
+                // TODO: active notes metadata
+
+                //
+
+                SetCurrentPlaybackEvent(_clock.CurrentTime);
+            }
+        }
+
+        private void OnObjectsRemoved(object sender, ICollection<ITimedObject> removedTimedObjects)
+        {
+            if (!TrackSourceObjectsChanges)
+                return;
+
+            lock (_playbackEventsLock)
+            {
+                var timedObjectsEnumerator = removedTimedObjects.OrderBy(o => o.Time).GetEnumerator();
+                var timedObjectsEndNotReached = timedObjectsEnumerator.MoveNext();
+
+                for (var node = _playbackEvents.First; node != null && timedObjectsEndNotReached; node = node.Next)
+                {
+                    if (node.Value.SourceObject == timedObjectsEnumerator.Current)
+                    {
+                        _playbackEvents.Remove(node);
+                        timedObjectsEndNotReached = timedObjectsEnumerator.MoveNext();
+                    }
+                }
+
+                //
+
+                // TODO: optimize
+                _notesMetadata.RemoveAll(m => removedTimedObjects.Contains(m.RawNote));
+
+                // TODO: remove from active notes metadata
+
+                //
+
+                SetCurrentPlaybackEvent(_clock.CurrentTime);
+            }
+        }
+
+        private void OnObjectsAdded(object sender, ICollection<ITimedObject> addedTimedObjects)
+        {
+            if (!TrackSourceObjectsChanges)
+                return;
+
+            lock (_playbackEventsLock)
+            {
+                var playbackEvents = GetPlaybackEvents(addedTimedObjects, TempoMap);
+                var playbackEventsEnumerator = playbackEvents.GetEnumerator();
+                var playbackEventsEndNotReached = playbackEventsEnumerator.MoveNext();
+
+                for (var node = _playbackEvents.First; node != null && playbackEventsEndNotReached; node = node.Next)
+                {
+                    if (_playbackEventsComparer.Compare(node.Value, playbackEventsEnumerator.Current) > 0)
+                    {
+                        node = _playbackEvents.AddBefore(node, playbackEventsEnumerator.Current);
+                        playbackEventsEndNotReached = playbackEventsEnumerator.MoveNext();
+                    }
+                }
+
+                //
+
+                if (playbackEventsEndNotReached)
+                {
+                    do
+                    {
+                        _playbackEvents.AddLast(playbackEventsEnumerator.Current);
+                    }
+                    while (playbackEventsEnumerator.MoveNext());
+                }
+
+                //
+
+                var notesMetadata = playbackEvents.Select(e => e.Metadata.Note).Where(m => m != null).ToList();
+
+                // TODO: optimize
+                _notesMetadata.AddRange(notesMetadata);
+                _notesMetadata.Sort((m1, m2) => m1.StartTime.CompareTo(m2.StartTime));
+
+                // TODO: optimize
+                SetCurrentPlaybackEvent(_clock.CurrentTime);
+            }
+        }
+
+        private void SetCurrentPlaybackEvent(TimeSpan time)
+        {
+            _currentPlaybackEvent = _playbackEvents.First;
+            for (var node = _playbackEvents.First; node != null; node = node.Next)
+            {
+                var playbackEvent = node.Value;
+                if (playbackEvent.Time < time)
+                    continue;
+
+                _currentPlaybackEvent = node;
+                break;
+            }
+        }
+
         private static ICollection<PlaybackEvent> GetPlaybackEvents(IEnumerable<ITimedObject> timedObjects, TempoMap tempoMap)
         {
             var playbackEvents = new List<PlaybackEvent>();
@@ -869,10 +1017,10 @@ namespace Melanchall.DryWetMidi.Devices
 
                 var timedEvent = timedObject as TimedEvent;
                 if (timedEvent != null)
-                    playbackEvents.Add(new PlaybackEvent(timedEvent.Event, timedEvent.TimeAs<MetricTimeSpan>(tempoMap), timedEvent.Time));
+                    playbackEvents.Add(new PlaybackEvent(timedObject, timedEvent.Event, timedEvent.TimeAs<MetricTimeSpan>(tempoMap), timedEvent.Time));
             }
 
-            return playbackEvents.OrderBy(e => e, new PlaybackEventsComparer()).ToArray();
+            return playbackEvents.OrderBy(e => e, _playbackEventsComparer).ToArray();
         }
 
         private static IEnumerable<PlaybackEvent> GetPlaybackEvents(Chord chord, TempoMap tempoMap)
@@ -892,13 +1040,13 @@ namespace Melanchall.DryWetMidi.Devices
             TimeSpan noteEndTime = TimeConverter.ConvertTo<MetricTimeSpan>(note.Time + note.Length, tempoMap);
             var noteMetadata = new NotePlaybackEventMetadata(note, noteStartTime, noteEndTime);
 
-            yield return GetPlaybackEventWithNoteMetadata(note.TimedNoteOnEvent, tempoMap, noteMetadata);
-            yield return GetPlaybackEventWithNoteMetadata(note.TimedNoteOffEvent, tempoMap, noteMetadata);
+            yield return GetPlaybackEventWithNoteMetadata(note, note.GetTimedNoteOnEvent(), tempoMap, noteMetadata);
+            yield return GetPlaybackEventWithNoteMetadata(note, note.GetTimedNoteOffEvent(), tempoMap, noteMetadata);
         }
 
-        private static PlaybackEvent GetPlaybackEventWithNoteMetadata(TimedEvent timedEvent, TempoMap tempoMap, NotePlaybackEventMetadata noteMetadata)
+        private static PlaybackEvent GetPlaybackEventWithNoteMetadata(Note note, TimedEvent timedEvent, TempoMap tempoMap, NotePlaybackEventMetadata noteMetadata)
         {
-            var playbackEvent = new PlaybackEvent(timedEvent.Event, timedEvent.TimeAs<MetricTimeSpan>(tempoMap), timedEvent.Time);
+            var playbackEvent = new PlaybackEvent(note, timedEvent.Event, timedEvent.TimeAs<MetricTimeSpan>(tempoMap), timedEvent.Time);
             playbackEvent.Metadata.Note = noteMetadata;
             return playbackEvent;
         }

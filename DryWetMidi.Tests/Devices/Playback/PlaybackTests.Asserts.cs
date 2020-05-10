@@ -438,6 +438,73 @@ namespace Melanchall.DryWetMidi.Tests.Devices
             CompareSentReceivedEvents(sentEvents.Take(expectedTimes.Count).ToList(), receivedEvents.Take(expectedTimes.Count).ToList(), expectedTimes);
         }
 
+        private void CheckSourceObjectsChanges(
+            IEnumerable<ITimedObject> source,
+            ICollection<ReceivedEvent> expectedReceivedEvents,
+            PlaybackAction setupPlayback,
+            PlaybackAction beforePlaybackStarted,
+            PlaybackAction afterPlaybackStarted,
+            TimeSpan stopAfter,
+            TimeSpan stopPeriod,
+            PlaybackAction afterPlaybackStopped,
+            PlaybackAction afterPlaybackResumed,
+            PlaybackAction afterPlaybackFinished)
+        {
+            var playbackContext = new PlaybackContext();
+
+            var receivedEvents = playbackContext.ReceivedEvents;
+            var sentEvents = playbackContext.SentEvents;
+            var stopwatch = playbackContext.Stopwatch;
+            var tempoMap = playbackContext.TempoMap;
+
+            using (var outputDevice = OutputDevice.GetByName(SendReceiveUtilities.DeviceToTestOnName))
+            {
+                SendReceiveUtilities.WarmUpDevice(outputDevice);
+                outputDevice.EventSent += (_, e) => sentEvents.Add(new SentEvent(e.Event, stopwatch.Elapsed));
+
+                using (var playback = new Playback(source, tempoMap, outputDevice))
+                {
+                    setupPlayback(playbackContext, playback);
+                    beforePlaybackStarted(playbackContext, playback);
+
+                    using (var inputDevice = InputDevice.GetByName(SendReceiveUtilities.DeviceToTestOnName))
+                    {
+                        inputDevice.EventReceived += (_, e) =>
+                        {
+                            lock (playbackContext.ReceivedEventsLockObject)
+                            {
+                                receivedEvents.Add(new ReceivedEvent(e.Event, stopwatch.Elapsed));
+                            }
+                        };
+                        inputDevice.StartEventsListening();
+                        stopwatch.Start();
+
+                        playback.Start();
+                        afterPlaybackStarted(playbackContext, playback);
+
+                        if (stopPeriod > TimeSpan.Zero)
+                        {
+                            SpinWait.SpinUntil(() => stopwatch.Elapsed >= stopAfter);
+                            playback.Stop();
+                            stopwatch.Stop();
+                            afterPlaybackStopped(playbackContext, playback);
+
+                            Thread.Sleep(stopPeriod);
+                            stopwatch.Start();
+                            playback.Start();
+                            afterPlaybackResumed(playbackContext, playback);
+                        }
+
+                        SpinWait.SpinUntil(() => !playback.IsRunning);
+                        stopwatch.Stop();
+                        afterPlaybackFinished(playbackContext, playback);
+                    }
+                }
+            }
+
+            CompareReceivedEvents(receivedEvents, expectedReceivedEvents.ToList());
+        }
+
         private void CheckPlaybackStop(
             ICollection<EventToSend> eventsToSend,
             ICollection<EventToSend> eventsWillBeSent,
@@ -626,7 +693,7 @@ namespace Melanchall.DryWetMidi.Tests.Devices
                 Assert.LessOrEqual(
                     offsetFromExpectedTime,
                     SendReceiveUtilities.MaximumEventSendReceiveDelay,
-                    $"Event was received at wrong time (at {receivedEvent.Time} instead of {expectedTime}).");
+                    $"Delta is too big. Event was received at wrong time (at {receivedEvent.Time} instead of {expectedTime}).");
             }
         }
 
