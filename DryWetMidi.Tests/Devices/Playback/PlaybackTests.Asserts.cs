@@ -438,7 +438,7 @@ namespace Melanchall.DryWetMidi.Tests.Devices
             CompareSentReceivedEvents(sentEvents.Take(expectedTimes.Count).ToList(), receivedEvents.Take(expectedTimes.Count).ToList(), expectedTimes);
         }
 
-        private void CheckSourceObjectsChanges(
+        private void CheckPlaybackSource(
             IEnumerable<ITimedObject> source,
             ICollection<ReceivedEvent> expectedReceivedEvents,
             PlaybackAction setupPlayback,

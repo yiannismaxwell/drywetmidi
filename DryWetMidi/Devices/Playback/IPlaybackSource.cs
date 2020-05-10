@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using Melanchall.DryWetMidi.Interaction;
 
-namespace Melanchall.DryWetMidi.Interaction
+namespace Melanchall.DryWetMidi.Devices
 {
-    public interface ITimedObjectsCollectionChanged
+    public interface IPlaybackSource
     {
         #region Events
 

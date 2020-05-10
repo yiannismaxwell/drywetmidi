@@ -67,7 +67,7 @@ namespace Melanchall.DryWetMidi.Devices
         private readonly object _playbackEventsLock = new object();
 
         private readonly IEnumerable<ITimedObject> _sourceTimedObjects;
-        private readonly ITimedObjectsCollectionChanged _sourceTimedObjectsCollectionChanged;
+        private readonly IPlaybackSource _playbackSource;
 
         private static readonly PlaybackEventsComparer _playbackEventsComparer = new PlaybackEventsComparer();
 
@@ -222,15 +222,15 @@ namespace Melanchall.DryWetMidi.Devices
 
             //
 
-            _sourceTimedObjectsCollectionChanged = timedObjects as ITimedObjectsCollectionChanged;
-            if (_sourceTimedObjectsCollectionChanged != null)
+            _playbackSource = timedObjects as IPlaybackSource;
+            if (_playbackSource != null)
             {
                 _sourceTimedObjects = timedObjects;
 
-                _sourceTimedObjectsCollectionChanged.ObjectsAdded += OnObjectsAdded;
-                _sourceTimedObjectsCollectionChanged.ObjectsRemoved += OnObjectsRemoved;
-                _sourceTimedObjectsCollectionChanged.ObjectsTimesChanged += OnObjectsTimesChanged;
-                _sourceTimedObjectsCollectionChanged.CollectionModified += OnCollectionModified;
+                _playbackSource.ObjectsAdded += OnObjectsAdded;
+                _playbackSource.ObjectsRemoved += OnObjectsRemoved;
+                _playbackSource.ObjectsTimesChanged += OnObjectsTimesChanged;
+                _playbackSource.CollectionModified += OnCollectionModified;
             }
         }
 
