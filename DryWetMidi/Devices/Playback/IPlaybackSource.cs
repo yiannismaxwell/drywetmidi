@@ -4,7 +4,7 @@ using Melanchall.DryWetMidi.Interaction;
 
 namespace Melanchall.DryWetMidi.Devices
 {
-    public interface IPlaybackSource
+    public interface IPlaybackSource : IEnumerable<ITimedObject>
     {
         #region Events
 
