@@ -5,22 +5,21 @@ trigger:
     - master
     - develop
   paths:
-    exclude:
-    - DryWetMidi.Tests/
-    - Docs/
-    - README.md
-    - Resources/CI/win-test-netframework-core.yaml
-    - Resources/CI/win-test-netframework-devices.yaml
-    - Resources/CI/win-test-netcore-core.yaml
-    - Resources/CI/win-test-netcore-devices.yaml
-    - Resources/CI/mac-test-netcore-core.yaml
-    - Resources/CI/lin-test-netcore-core.yaml
-    - Resources/CI/build-artifacts-library.yaml
-    - Resources/CI/build-artifacts-docs.yaml
-    - Resources/CI/check-readme-links.yaml
-    - Resources/CI/check-cs-links.yaml
-    - Resources/CI/check-docs-links.yaml
-    - .github/
+    include:
+    - 'DryWetMidi/*'
+    - 'DryWetMidi.Benchmarks/*'
+    - 'DryWetMidi.Tests.Common/*'
+    - 'Resources/CI/run-benchmarks.yaml'
+    - 'Resources/Utilities/CreateLoopbackPort/*'
+    - 'Resources/Scripts/Setup MIDI ports.ps1'
+
+schedules:
+- cron: '0 0,3,6 * * *'
+  displayName: Run benchmarks
+  branches:
+    include:
+    - develop
+  always: 'true'
 
 pool:
   vmImage: 'windows-latest'
@@ -31,7 +30,7 @@ variables:
   buildConfiguration: 'Release'
   version: '5.1.1'
 
-name: $(TeamProject)_$(SourceBranchName)_RunBenchmarks_Windows_$(version)$(Rev:.r)
+name: $(TeamProject)_$(SourceBranchName)_RunBenchmarks_$(ApiArea)_$(version)$(Rev:.r)
 
 steps:
 - task: PowerShell@2
@@ -61,25 +60,36 @@ steps:
     command: restore
 
 - task: DotNetCoreCLI@2
-  displayName: Build solution
+  displayName: Build DryWetMidi and DryWetMidi.Tests.Common
   inputs:
     command: 'build'
-    arguments: '--configuration $(buildConfiguration)'
+    arguments: '--configuration $(buildConfiguration) --framework netstandard2.0'
+    projects: |
+      DryWetMidi/Melanchall.DryWetMidi.csproj
+      DryWetMidi.Tests.Common/Melanchall.DryWetMidi.Tests.Common.csproj
+
+- task: DotNetCoreCLI@2
+  displayName: Build DryWetMidi.Benchmarks
+  inputs:
+    command: 'build'
+    arguments: '--configuration $(buildConfiguration) --framework netcoreapp2.1'
+    projects: |
+      DryWetMidi.Benchmarks/Melanchall.DryWetMidi.Benchmarks.csproj
     
 - task: PowerShell@2
   displayName: Setup MIDI ports for devices API benchmarks
+  condition: "contains(variables['ApiArea'], 'Devices')"
   inputs:
     targetType: filePath
     filePath: '$(Build.SourcesDirectory)/Resources/Scripts/Setup MIDI ports.ps1'
 
-- task: VSTest@2
+- task: DotNetCoreCLI@2
   displayName: Run benchmarks
+  continueOnError: true
   inputs:
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
-    testSelector: testAssemblies
-    testAssemblyVer2:
-      '**/*.Benchmarks.dll'
+    command: 'test'
+    projects: 'DryWetMidi.Benchmarks/Melanchall.DryWetMidi.Benchmarks.csproj'
+    arguments: '--blame --no-build --configuration $(buildConfiguration) --filter (FullyQualifiedName~.$(ApiArea)) --framework netcoreapp2.1 --verbosity normal'
 
 - task: CopyFiles@2
   displayName: Copy results
@@ -142,3 +152,24 @@ steps:
   inputs:
     targetPath: $(Build.ArtifactStagingDirectory)\CurrentResults
     artifact: BenchmarksResults
+
+- task: PowerShell@2
+  displayName: Export results to InfluxDB Cloud
+  inputs:
+    targetType: 'inline'
+    script: |
+      $location = Get-Location
+      Write-Host "Building ExportBenchmarksResults..."
+      dotnet publish "Resources/Utilities/ExportBenchmarksResults/ExportBenchmarksResults.sln" -c Release -r win10-x64 -o "$location/ExportBenchmarksResults"
+      Write-Host "Built."
+      
+      Write-Host "Exporting benchmarks results..."
+      $url = "$(InfluxCloudUrl)"
+      $token = "$(InfluxCloudToken)"
+      $organization = "$(InfluxCloudOrganization)"
+      $bucket = "$(InfluxCloudBucket)"
+      $measurement = "$(InfluxCloudMeasurement)"
+      $resultsFolder = "$(Build.ArtifactStagingDirectory)\CurrentResults"
+      $branch = "$(Build.SourceBranchName)"
+      Start-Process "ExportBenchmarksResults/ExportBenchmarksResults.exe" -ArgumentList """$url"" ""$token"" ""$organization"" ""$bucket"" ""$measurement"" ""$resultsFolder"" ""$branch""" -Wait -NoNewWindow
+      Write-Host "Exported."

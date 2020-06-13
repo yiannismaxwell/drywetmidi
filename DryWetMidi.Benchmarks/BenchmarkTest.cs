@@ -23,10 +23,6 @@ namespace Melanchall.DryWetMidi.Benchmarks
         [SetUp]
         public void SetupTest()
         {
-#if DEBUG
-            Assert.Inconclusive("Unable to run benchmarks on Debug configuration. Use Release.");
-#endif
-
             Environment.CurrentDirectory = TestContext.CurrentContext.TestDirectory;
         }
 
@@ -39,10 +35,16 @@ namespace Melanchall.DryWetMidi.Benchmarks
         {
             var summary = BenchmarkRunner.Run(
                 type,
-                ManualConfig.Create(DefaultConfig.Instance)
-                            .With(AsciiDocExporter.Default, JsonExporter.Brief)
-                            .With(StatisticColumn.Min)
-                            .With(columns));
+                ManualConfig.Create(
+#if DEBUG
+                    new DebugInProcessConfig()
+#else
+                    DefaultConfig.Instance
+#endif
+                    )
+                    .AddExporter(AsciiDocExporter.Default, JsonExporter.Brief)
+                    .AddColumn(StatisticColumn.Min)
+                    .AddColumn(columns));
 
             // Assert validation errors
 
@@ -65,8 +67,8 @@ namespace Melanchall.DryWetMidi.Benchmarks
             {
                 var buildResult = report.BuildResult;
 
-                if (!buildResult.IsBuildSuccess)
-                    buildErrorsStringBuilder.AppendLine($"Build exception={buildResult.BuildException.Message}");
+                if (!string.IsNullOrEmpty(buildResult.ErrorMessage))
+                    buildErrorsStringBuilder.AppendLine($"Error={buildResult.ErrorMessage}");
 
                 if (!buildResult.IsGenerateSuccess)
                     buildErrorsStringBuilder.AppendLine($"Generate exception={buildResult.GenerateException.Message}");
@@ -85,6 +87,6 @@ namespace Melanchall.DryWetMidi.Benchmarks
                 Assert.Inconclusive(buildError);
         }
 
-        #endregion
+#endregion
     }
 }

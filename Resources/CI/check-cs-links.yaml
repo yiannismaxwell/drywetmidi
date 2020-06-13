@@ -3,12 +3,11 @@ trigger:
     include:
     - master
     - develop
-
-pr:
-  branches:
+  paths:
     include:
-    - DryWetMidi/
-    - Resources/CI/check-cs-links.yaml
+    - 'DryWetMidi/*'
+    - 'Resources/Scripts/Check links.ps1'
+    - 'Resources/CI/check-cs-links.yaml'
 
 schedules:
 - cron: '0 0,9,15,20 * * *'
@@ -30,5 +29,5 @@ steps:
   inputs:
     targetType: filePath
     filePath: '$(Build.SourcesDirectory)/Resources/Scripts/Check links.ps1'
-    arguments: '-Folder "$(Build.SourcesDirectory)" -Filter "*.cs"'
+    arguments: '-Folder "$(Build.SourcesDirectory)/DryWetMidi" -Filter "*.cs"'
     failOnStderr: 'true'
