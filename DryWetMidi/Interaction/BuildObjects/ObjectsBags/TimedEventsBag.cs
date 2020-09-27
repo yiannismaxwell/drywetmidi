@@ -1,24 +1,35 @@
-﻿namespace Melanchall.DryWetMidi.Interaction
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Melanchall.DryWetMidi.Interaction
 {
-    internal sealed class TimedEventBag : ObjectBag
+    internal sealed class TimedEventsBag : ObjectsBag
     {
         #region Properties
 
         public override bool IsCompleted
         {
-            get { return true; }
+            get { return _timedObjects.Any(); }
         }
 
         #endregion
 
         #region Methods
 
+        public override IEnumerable<ITimedObject> GetRawObjects()
+        {
+            throw new InvalidOperationException("Raw objects aren't defined for timed events.");
+        }
+
         public override bool TryAddObject(ITimedObject timedObject)
         {
+            if (IsCompleted)
+                return false;
+
             return TryAddTimedEvent(timedObject as TimedEvent) ||
                    TryAddNote(timedObject as Note) ||
-                   TryAddChord(timedObject as Chord) ||
-                   TryAddRegisteredParameter(timedObject as RegisteredParameter);
+                   TryAddChord(timedObject as Chord);
         }
 
         private bool TryAddTimedEvent(TimedEvent timedEvent)
@@ -48,21 +59,6 @@
             foreach (var note in chord.Notes)
             {
                 result &= TryAddNote(note);
-            }
-
-            return result;
-        }
-
-        private bool TryAddRegisteredParameter(RegisteredParameter registeredParameter)
-        {
-            if (registeredParameter == null)
-                return false;
-
-            var result = true;
-
-            foreach (var timedEvent in registeredParameter.GetTimedEvents())
-            {
-                result &= TryAddTimedEvent(timedEvent);
             }
 
             return result;

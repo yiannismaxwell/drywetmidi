@@ -2,7 +2,7 @@
 
 namespace Melanchall.DryWetMidi.Interaction
 {
-    internal abstract class ObjectBag
+    internal abstract class ObjectsBag
     {
         #region Fields
 
@@ -22,6 +22,8 @@ namespace Melanchall.DryWetMidi.Interaction
         {
             return _timedObjects;
         }
+
+        public abstract IEnumerable<ITimedObject> GetRawObjects();
 
         public abstract bool TryAddObject(ITimedObject timedObject);
 
