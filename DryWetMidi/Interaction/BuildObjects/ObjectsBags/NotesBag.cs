@@ -67,7 +67,7 @@ namespace Melanchall.DryWetMidi.Interaction
                     }
                 case MidiEventType.NoteOff:
                     {
-                        if (_timedNoteOffEvent != null)
+                        if (_timedNoteOnEvent == null || _timedNoteOffEvent != null)
                             return false;
 
                         var noteId = ((NoteOffEvent)timedEvent.Event).GetNoteId();
@@ -75,6 +75,9 @@ namespace Melanchall.DryWetMidi.Interaction
                             return false;
 
                         _timedNoteOffEvent = timedEvent;
+                        if (IsCompleted)
+                            _timedObjects.Add(new Note(_timedNoteOnEvent, _timedNoteOffEvent));
+
                         break;
                     }
                 default:
