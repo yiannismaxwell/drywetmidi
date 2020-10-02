@@ -12,6 +12,10 @@
 
         public bool BuildRegisteredParameters { get; set; }
 
+        public bool BuildRests { get; set; }
+
+        public RestBuildingSettings RestBuildingSettings { get; set; }
+
         #endregion
     }
 }

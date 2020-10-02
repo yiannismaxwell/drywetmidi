@@ -15,7 +15,33 @@ namespace Melanchall.DryWetMidi.Interaction
             ThrowIfArgument.IsNull(nameof(timedObjects), timedObjects);
             ThrowIfArgument.IsNull(nameof(settings), settings);
 
-            return BuildObjects(timedObjects.OrderBy(o => o.Time), settings, 0);
+            timedObjects = timedObjects.OrderBy(o => o.Time);
+            var result = BuildObjects(timedObjects, settings, 0);
+
+            //
+
+            var postBuilders = new IPostBuilder[]
+            {
+                settings.BuildRests ? new RestsBuilder() : null
+            }
+            .Where(b => b != null)
+            .ToArray();
+
+            if (postBuilders.Any())
+            {
+                var resultList = result.ToList();
+
+                foreach (var builder in postBuilders)
+                {
+                    resultList.AddRange(builder.BuildObjects(timedObjects, result, settings));
+                }
+
+                result = resultList.OrderBy(o => o.Time);
+            }
+
+            //
+
+            return result;
         }
 
         private static IEnumerable<ITimedObject> BuildObjects(

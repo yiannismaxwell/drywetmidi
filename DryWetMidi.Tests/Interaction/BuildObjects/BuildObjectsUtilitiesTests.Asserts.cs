@@ -35,6 +35,22 @@ namespace Melanchall.DryWetMidi.Tests.Interaction
                 if (timesDifference != 0)
                     return Math.Sign(timesDifference);
 
+                var lengthedObject1 = x as ILengthedObject;
+                var lengthedObject2 = y as ILengthedObject;
+
+                if (lengthedObject1 != null && lengthedObject2 == null)
+                    return 1;
+
+                if (lengthedObject1 == null && lengthedObject2 != null)
+                    return -1;
+
+                if (lengthedObject1 != null && lengthedObject2 != null)
+                {
+                    var lengthsDifference = lengthedObject1.Length - lengthedObject2.Length;
+                    if (lengthsDifference != 0)
+                        return Math.Sign(lengthsDifference);
+                }
+
                 return TimedObjectEquality.AreEqual(timedObject1, timedObject2, false) ? 0 : -1;
             }
 
