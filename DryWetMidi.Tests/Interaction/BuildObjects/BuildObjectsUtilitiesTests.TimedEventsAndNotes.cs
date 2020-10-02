@@ -1,71 +1,19 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Melanchall.DryWetMidi.Common;
 using Melanchall.DryWetMidi.Core;
 using Melanchall.DryWetMidi.Interaction;
-using Melanchall.DryWetMidi.Tests.Utilities;
 using NUnit.Framework;
 
 namespace Melanchall.DryWetMidi.Tests.Interaction
 {
     [TestFixture]
-    public sealed class BuildObjectsUtilitiesTests
+    public sealed partial class BuildObjectsUtilitiesTests
     {
-        #region Nested classes
-
-        private sealed class TimedObjectComparer : IComparer
-        {
-            #region IComparer
-
-            public int Compare(object x, object y)
-            {
-                var timedObject1 = x as ITimedObject;
-                var timedObject2 = y as ITimedObject;
-
-                if (ReferenceEquals(timedObject1, timedObject2))
-                    return 1;
-
-                if (ReferenceEquals(timedObject1, null))
-                    return -1;
-
-                if (ReferenceEquals(timedObject2, null))
-                    return 1;
-
-                var timesDifference = timedObject1.Time - timedObject2.Time;
-                if (timesDifference != 0)
-                    return Math.Sign(timesDifference);
-
-                return TimedObjectEquality.AreEqual(timedObject1, timedObject2, false) ? 0 : -1;
-            }
-
-            #endregion
-        }
-
-        #endregion
-
-        #region Setup
-
-        [OneTimeSetUp]
-        public void SetUp()
-        {
-            TestContext.AddFormatter<ITimedObject>(obj =>
-            {
-                var timedObject = (ITimedObject)obj;
-                var lengthedObject = obj as ILengthedObject;
-                return lengthedObject != null
-                    ? $"{obj} (T = {lengthedObject.Time}, L = {lengthedObject.Length})"
-                    : $"{obj} (T = {timedObject.Time})";
-            });
-        }
-
-        #endregion
-
         #region Test methods
 
         [Test]
-        public void BuildObjects_TimedEventsAndNotes_Empty()
+        public void BuildTimedEventsAndNotes_Empty()
         {
             CheckBuildingTimedEventsAndNotes(
                 inputObjects: Enumerable.Empty<ITimedObject>(),
@@ -73,7 +21,7 @@ namespace Melanchall.DryWetMidi.Tests.Interaction
         }
 
         [Test]
-        public void BuildObjects_TimedEventsAndNotes_FromTimedEvents_Mixed()
+        public void BuildTimedEventsAndNotes_FromTimedEvents_Mixed()
         {
             CheckBuildingTimedEventsAndNotes(
                 inputObjects: new ITimedObject[]
@@ -90,7 +38,24 @@ namespace Melanchall.DryWetMidi.Tests.Interaction
         }
 
         [Test]
-        public void BuildObjects_TimedEventsAndNotes_FromTimedEvents_OnlyNoteEvents()
+        public void BuildTimedEventsAndNotes_FromTimedEvents_Mixed_Unordered()
+        {
+            CheckBuildingTimedEventsAndNotes(
+                inputObjects: new ITimedObject[]
+                {
+                    new TimedEvent(new TextEvent("A"), 0),
+                    new TimedEvent(new NoteOffEvent(), 50),
+                    new TimedEvent(new NoteOnEvent(), 20),
+                },
+                outputObjects: new ITimedObject[]
+                {
+                    new TimedEvent(new TextEvent("A"), 0),
+                    new Note(SevenBitNumber.MinValue, 30, 20) { Velocity = SevenBitNumber.MinValue }
+                });
+        }
+
+        [Test]
+        public void BuildTimedEventsAndNotes_FromTimedEvents_OnlyNoteEvents()
         {
             CheckBuildingTimedEventsAndNotes(
                 inputObjects: new ITimedObject[]
@@ -105,7 +70,7 @@ namespace Melanchall.DryWetMidi.Tests.Interaction
         }
 
         [Test]
-        public void BuildObjects_TimedEventsAndNotes_FromTimedEvents_OnlyNonNoteEvents()
+        public void BuildTimedEventsAndNotes_FromTimedEvents_OnlyNonNoteEvents()
         {
             CheckBuildingTimedEventsAndNotes(
                 inputObjects: new ITimedObject[]
@@ -119,7 +84,79 @@ namespace Melanchall.DryWetMidi.Tests.Interaction
         }
 
         [Test]
-        public void BuildObjects_TimedEventsAndNotes_AllProcessed()
+        public void BuildTimedEventsAndNotes_FromNotes()
+        {
+            CheckBuildingTimedEventsAndNotes(
+                inputObjects: new ITimedObject[]
+                {
+                    new Note((SevenBitNumber)50, 80, 100),
+                    new Note((SevenBitNumber)10, 20, 140),
+                },
+                outputObjects: new ITimedObject[]
+                {
+                    new Note((SevenBitNumber)50, 80, 100),
+                    new Note((SevenBitNumber)10, 20, 140),
+                });
+        }
+
+        [Test]
+        public void BuildTimedEventsAndNotes_FromNotesAndTimedEvents()
+        {
+            CheckBuildingTimedEventsAndNotes(
+                inputObjects: new ITimedObject[]
+                {
+                    new Note((SevenBitNumber)50, 80, 180),
+                    new TimedEvent(new TextEvent("A"), 40),
+                    new Note((SevenBitNumber)10, 20, 140),
+                },
+                outputObjects: new ITimedObject[]
+                {
+                    new TimedEvent(new TextEvent("A"), 40),
+                    new Note((SevenBitNumber)10, 20, 140),
+                    new Note((SevenBitNumber)50, 80, 180),
+                });
+        }
+
+        [Test]
+        public void BuildTimedEventsAndNotes_FromChords()
+        {
+            CheckBuildingTimedEventsAndNotes(
+                inputObjects: new ITimedObject[]
+                {
+                    new Chord(
+                        new Note((SevenBitNumber)50, 80, 100),
+                        new Note((SevenBitNumber)10, 20, 50)),
+                },
+                outputObjects: new ITimedObject[]
+                {
+                    new Note((SevenBitNumber)10, 20, 50),
+                    new Note((SevenBitNumber)50, 80, 100),
+                });
+        }
+
+        [Test]
+        public void BuildTimedEventsAndNotes_FromChordsAndNotesAndTimedEvents()
+        {
+            CheckBuildingTimedEventsAndNotes(
+                inputObjects: new ITimedObject[]
+                {
+                    new Chord(
+                        new Note((SevenBitNumber)50, 80, 100),
+                        new Note((SevenBitNumber)10, 20, 50)),
+                    new TimedEvent(new TextEvent("A"), 30),
+                    new Note((SevenBitNumber)90, 23334, 223),
+                },
+                outputObjects: new ITimedObject[]
+                {
+                    new TimedEvent(new TextEvent("A"), 30),
+                    new Note((SevenBitNumber)10, 20, 50),
+                    new Note((SevenBitNumber)50, 80, 100),
+                    new Note((SevenBitNumber)90, 23334, 223),
+                });
+        }
+
+        [Test]
+        public void BuildTimedEventsAndNotes_AllProcessed()
         {
             CheckBuildingTimedEventsAndNotes(
                 inputObjects: new ITimedObject[]
@@ -157,7 +194,7 @@ namespace Melanchall.DryWetMidi.Tests.Interaction
         }
 
         [Test]
-        public void BuildObjects_TimedEventsAndNotes_NotAllProcessed()
+        public void BuildTimedEventsAndNotes_NotAllProcessed()
         {
             CheckBuildingTimedEventsAndNotes(
                 inputObjects: new ITimedObject[]
@@ -196,7 +233,7 @@ namespace Melanchall.DryWetMidi.Tests.Interaction
         }
 
         [Test]
-        public void BuildObjects_TimedEventsAndNotes_SameNotesInTail()
+        public void BuildTimedEventsAndNotes_SameNotesInTail()
         {
             CheckBuildingTimedEventsAndNotes(
                 inputObjects: new ITimedObject[]
@@ -232,18 +269,6 @@ namespace Melanchall.DryWetMidi.Tests.Interaction
                     BuildTimedEvents = true,
                     BuildNotes = true
                 });
-        }
-
-        private void CheckObjectsBuilding(
-            IEnumerable<ITimedObject> inputObjects,
-            IEnumerable<ITimedObject> outputObjects,
-            ObjectsBuildingSettings settings)
-        {
-            var actualObjects = inputObjects
-                .BuildObjects(settings)
-                .ToList();
-
-            CollectionAssert.AreEqual(outputObjects, actualObjects, new TimedObjectComparer());
         }
 
         #endregion

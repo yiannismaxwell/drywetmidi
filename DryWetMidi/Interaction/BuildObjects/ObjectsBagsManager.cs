@@ -35,6 +35,8 @@ namespace Melanchall.DryWetMidi.Interaction
                 return true;
             }
 
+            //
+
             var bag = new TBag();
             var result = bag.TryAddObject(timedObject);
             if (result)
@@ -44,6 +46,8 @@ namespace Melanchall.DryWetMidi.Interaction
                 if (!bag.IsCompleted)
                     _uncompletedBags.Add(bag);
             }
+
+            //
 
             return result;
         }

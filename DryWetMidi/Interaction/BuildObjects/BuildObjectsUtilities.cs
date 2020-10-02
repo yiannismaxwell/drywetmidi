@@ -15,7 +15,7 @@ namespace Melanchall.DryWetMidi.Interaction
             ThrowIfArgument.IsNull(nameof(timedObjects), timedObjects);
             ThrowIfArgument.IsNull(nameof(settings), settings);
 
-            return BuildObjects(timedObjects, settings, 0);
+            return BuildObjects(timedObjects.OrderBy(o => o.Time), settings, 0);
         }
 
         private static IEnumerable<ITimedObject> BuildObjects(
@@ -54,19 +54,11 @@ namespace Melanchall.DryWetMidi.Interaction
 
             //
 
-            var result = new List<ITimedObject>();
-
-            foreach (var bag in objectsBags)
-            {
-                if (bag.IsCompleted)
-                    result.AddRange(bag.GetObjects());
-                else
-                    result.AddRange(BuildObjects(bag.GetRawObjects(), settings, managersStartIndex + 1));
-            }
-
-            //
-
-            return result.OrderBy(o => o.Time);
+            return objectsBags
+                .SelectMany(b => b.IsCompleted
+                    ? b.GetObjects()
+                    : BuildObjects(b.GetRawObjects(), settings, managersStartIndex + 1))
+                .OrderBy(o => o.Time);
         }
 
         #endregion
