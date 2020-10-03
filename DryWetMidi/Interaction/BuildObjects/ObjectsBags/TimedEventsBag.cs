@@ -22,7 +22,7 @@ namespace Melanchall.DryWetMidi.Interaction
             throw new InvalidOperationException("Raw objects aren't defined for timed events.");
         }
 
-        public override bool TryAddObject(ITimedObject timedObject)
+        public override bool TryAddObject(ITimedObject timedObject, ObjectsBuildingSettings settings)
         {
             if (IsCompleted)
                 return false;

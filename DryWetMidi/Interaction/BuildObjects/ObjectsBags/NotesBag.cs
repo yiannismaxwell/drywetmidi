@@ -16,6 +16,11 @@ namespace Melanchall.DryWetMidi.Interaction
 
         #region Properties
 
+        public long Time
+        {
+            get { return _timedNoteOnEvent != null ? _timedNoteOnEvent.Time : -1; }
+        }
+
         public override bool IsCompleted
         {
             get
@@ -31,15 +36,20 @@ namespace Melanchall.DryWetMidi.Interaction
 
         #region Methods
 
+        public override IEnumerable<ITimedObject> GetObjects()
+        {
+            var result = base.GetObjects();
+            return _timedNoteOnEvent != null
+                ? result.Concat(new[] { new Note(_timedNoteOnEvent, _timedNoteOffEvent) })
+                : result;
+        }
+
         public override IEnumerable<ITimedObject> GetRawObjects()
         {
-            if (_timedNoteOnEvent != null && _timedNoteOffEvent != null)
-                return Enumerable.Empty<ITimedObject>();
-
             return new[] { _timedNoteOnEvent, _timedNoteOffEvent }.Where(e => e != null);
         }
 
-        public override bool TryAddObject(ITimedObject timedObject)
+        public override bool TryAddObject(ITimedObject timedObject, ObjectsBuildingSettings settings)
         {
             if (IsCompleted)
                 return false;
@@ -75,9 +85,6 @@ namespace Melanchall.DryWetMidi.Interaction
                             return false;
 
                         _timedNoteOffEvent = timedEvent;
-                        if (IsCompleted)
-                            _timedObjects.Add(new Note(_timedNoteOnEvent, _timedNoteOffEvent));
-
                         break;
                     }
                 default:

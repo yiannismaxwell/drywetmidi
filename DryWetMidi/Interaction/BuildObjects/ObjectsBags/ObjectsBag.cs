@@ -18,14 +18,14 @@ namespace Melanchall.DryWetMidi.Interaction
 
         #region Methods
 
-        public IEnumerable<ITimedObject> GetObjects()
+        public virtual IEnumerable<ITimedObject> GetObjects()
         {
             return _timedObjects;
         }
 
         public abstract IEnumerable<ITimedObject> GetRawObjects();
 
-        public abstract bool TryAddObject(ITimedObject timedObject);
+        public abstract bool TryAddObject(ITimedObject timedObject, ObjectsBuildingSettings settings);
 
         #endregion
     }

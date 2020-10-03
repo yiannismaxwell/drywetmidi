@@ -421,7 +421,7 @@ namespace Melanchall.DryWetMidi.Tests.Interaction
                 new ObjectsBuildingSettings
                 {
                     BuildRests = true,
-                    RestBuildingSettings = new RestBuildingSettings
+                    RestBuilderSettings = new RestBuilderSettings
                     {
                         RestSeparationPolicy = restSeparationPolicy
                     }

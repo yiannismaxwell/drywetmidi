@@ -6,8 +6,8 @@ namespace Melanchall.DryWetMidi.Interaction
     {
         #region Constructors
 
-        public NotesBuilder(List<ObjectsBag> objectsBags)
-            : base(objectsBags)
+        public NotesBuilder(List<ObjectsBag> objectsBags, ObjectsBuildingSettings settings)
+            : base(objectsBags, settings)
         {
         }
 

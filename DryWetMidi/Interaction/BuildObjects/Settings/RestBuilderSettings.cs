@@ -2,7 +2,7 @@
 
 namespace Melanchall.DryWetMidi.Interaction
 {
-    public sealed class RestBuildingSettings : IObjectsBuildingSettings
+    public sealed class RestBuilderSettings
     {
         #region Fields
 

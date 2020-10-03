@@ -53,17 +53,18 @@ namespace Melanchall.DryWetMidi.Interaction
         private static IEnumerable<ITimedObject> BuildObjects(
             this IEnumerable<ITimedObject> timedObjects,
             ObjectsBuildingSettings settings,
-            int managersStartIndex)
+            int buildersStartIndex)
         {
             var objectsBags = new List<ObjectsBag>();
 
             var builders = new ISequentialObjectsBuilder[]
             {
-                settings.BuildNotes ? new NotesBuilder(objectsBags) : null,
-                settings.BuildTimedEvents ? new TimedEventsBuilder(objectsBags) : null
+                settings.BuildChords ? new ChordsBuilder(objectsBags, settings) : null,
+                settings.BuildNotes ? new NotesBuilder(objectsBags, settings) : null,
+                settings.BuildTimedEvents ? new TimedEventsBuilder(objectsBags, settings) : null
             }
             .Where(b => b != null)
-            .Skip(managersStartIndex)
+            .Skip(buildersStartIndex)
             .ToArray();
 
             //
@@ -89,7 +90,7 @@ namespace Melanchall.DryWetMidi.Interaction
             return objectsBags
                 .SelectMany(b => b.IsCompleted
                     ? b.GetObjects()
-                    : BuildObjects(b.GetRawObjects(), settings, managersStartIndex + 1))
+                    : BuildObjects(b.GetRawObjects(), settings, buildersStartIndex + 1))
                 .OrderBy(o => o.Time);
         }
 

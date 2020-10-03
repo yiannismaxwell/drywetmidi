@@ -2,11 +2,11 @@
 
 namespace Melanchall.DryWetMidi.Interaction
 {
-    internal sealed class TimedEventsBuilder : SequentialObjectsBuilder<TimedEventsBag>
+    internal sealed class ChordsBuilder : SequentialObjectsBuilder<ChordsBag>
     {
         #region Constructors
 
-        public TimedEventsBuilder(List<ObjectsBag> objectsBags, ObjectsBuildingSettings settings)
+        public ChordsBuilder(List<ObjectsBag> objectsBags, ObjectsBuildingSettings settings)
             : base(objectsBags, settings)
         {
         }

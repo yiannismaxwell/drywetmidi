@@ -14,7 +14,9 @@
 
         public bool BuildRests { get; set; }
 
-        public RestBuildingSettings RestBuildingSettings { get; set; }
+        public ChordBuilderSettings ChordBuilderSettings { get; set; }
+
+        public RestBuilderSettings RestBuilderSettings { get; set; }
 
         #endregion
     }

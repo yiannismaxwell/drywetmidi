@@ -24,7 +24,7 @@ namespace Melanchall.DryWetMidi.Interaction
                 ? resultTimedObjects.OfType<Note>()
                 : inputTimedObjects.BuildObjects(new ObjectsBuildingSettings { BuildNotes = true }).OfType<Note>();
 
-            var restBuildingSettings = settings.RestBuildingSettings ?? new RestBuildingSettings();
+            var restBuildingSettings = settings.RestBuilderSettings ?? new RestBuilderSettings();
 
             switch (restBuildingSettings.RestSeparationPolicy)
             {

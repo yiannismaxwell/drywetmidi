@@ -472,7 +472,7 @@ namespace Melanchall.DryWetMidi.Tests.Interaction
                 {
                     BuildNotes = true,
                     BuildRests = true,
-                    RestBuildingSettings = new RestBuildingSettings
+                    RestBuilderSettings = new RestBuilderSettings
                     {
                         RestSeparationPolicy = restSeparationPolicy
                     }

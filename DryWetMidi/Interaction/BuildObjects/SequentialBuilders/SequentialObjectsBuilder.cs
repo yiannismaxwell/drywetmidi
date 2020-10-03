@@ -8,6 +8,8 @@ namespace Melanchall.DryWetMidi.Interaction
     {
         #region Fields
 
+        private readonly ObjectsBuildingSettings _settings;
+
         private readonly List<ObjectsBag> _objectsBags;
         private readonly List<TBag> _uncompletedBags = new List<TBag>();
 
@@ -15,9 +17,10 @@ namespace Melanchall.DryWetMidi.Interaction
 
         #region Constructors
 
-        public SequentialObjectsBuilder(List<ObjectsBag> objectsBags)
+        public SequentialObjectsBuilder(List<ObjectsBag> objectsBags, ObjectsBuildingSettings settings)
         {
             _objectsBags = objectsBags;
+            _settings = settings;
         }
 
         #endregion
@@ -26,7 +29,7 @@ namespace Melanchall.DryWetMidi.Interaction
 
         public bool TryAddObject(ITimedObject timedObject)
         {
-            var handlingBag = _uncompletedBags.FirstOrDefault(b => b.TryAddObject(timedObject));
+            var handlingBag = _uncompletedBags.FirstOrDefault(b => b.TryAddObject(timedObject, _settings));
             if (handlingBag != null)
             {
                 if (handlingBag.IsCompleted)
@@ -38,7 +41,7 @@ namespace Melanchall.DryWetMidi.Interaction
             //
 
             var bag = new TBag();
-            var result = bag.TryAddObject(timedObject);
+            var result = bag.TryAddObject(timedObject, _settings);
             if (result)
             {
                 _objectsBags.Add(bag);
