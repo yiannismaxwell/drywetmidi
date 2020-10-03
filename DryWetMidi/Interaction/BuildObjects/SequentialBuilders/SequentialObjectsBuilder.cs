@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace Melanchall.DryWetMidi.Interaction
 {
-    internal sealed class ObjectsBagsManager<TBag> : IObjectsBagsManager
+    internal abstract class SequentialObjectsBuilder<TBag> : ISequentialObjectsBuilder
         where TBag : ObjectsBag, new()
     {
         #region Fields
@@ -15,7 +15,7 @@ namespace Melanchall.DryWetMidi.Interaction
 
         #region Constructors
 
-        public ObjectsBagsManager(List<ObjectsBag> objectsBags)
+        public SequentialObjectsBuilder(List<ObjectsBag> objectsBags)
         {
             _objectsBags = objectsBags;
         }

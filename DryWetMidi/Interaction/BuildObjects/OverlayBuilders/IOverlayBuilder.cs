@@ -2,7 +2,7 @@
 
 namespace Melanchall.DryWetMidi.Interaction
 {
-    internal interface IPostBuilder
+    internal interface IOverlayBuilder
     {
         #region Methods
 

@@ -16,32 +16,38 @@ namespace Melanchall.DryWetMidi.Interaction
             ThrowIfArgument.IsNull(nameof(settings), settings);
 
             timedObjects = timedObjects.OrderBy(o => o.Time);
+
             var result = BuildObjects(timedObjects, settings, 0);
+            result = AddObjectsByPostBuilders(timedObjects, result, settings);
 
-            //
+            return result;
+        }
 
-            var postBuilders = new IPostBuilder[]
+        private static IEnumerable<ITimedObject> AddObjectsByPostBuilders(
+            IEnumerable<ITimedObject> inputTimedObjects,
+            IEnumerable<ITimedObject> resultTimedObjects,
+            ObjectsBuildingSettings settings)
+        {
+            var builders = new IOverlayBuilder[]
             {
                 settings.BuildRests ? new RestsBuilder() : null
             }
             .Where(b => b != null)
             .ToArray();
 
-            if (postBuilders.Any())
+            if (builders.Any())
             {
-                var resultList = result.ToList();
+                var resultList = resultTimedObjects.ToList();
 
-                foreach (var builder in postBuilders)
+                foreach (var builder in builders)
                 {
-                    resultList.AddRange(builder.BuildObjects(timedObjects, result, settings));
+                    resultList.AddRange(builder.BuildObjects(inputTimedObjects, resultTimedObjects, settings));
                 }
 
-                result = resultList.OrderBy(o => o.Time);
+                resultTimedObjects = resultList.OrderBy(o => o.Time);
             }
 
-            //
-
-            return result;
+            return resultTimedObjects;
         }
 
         private static IEnumerable<ITimedObject> BuildObjects(
@@ -51,12 +57,12 @@ namespace Melanchall.DryWetMidi.Interaction
         {
             var objectsBags = new List<ObjectsBag>();
 
-            var objectsBagsManagers = new IObjectsBagsManager[]
+            var builders = new ISequentialObjectsBuilder[]
             {
-                settings.BuildNotes ? new ObjectsBagsManager<NotesBag>(objectsBags) : null,
-                settings.BuildTimedEvents ? new ObjectsBagsManager<TimedEventsBag>(objectsBags) : null
+                settings.BuildNotes ? new NotesBuilder(objectsBags) : null,
+                settings.BuildTimedEvents ? new TimedEventsBuilder(objectsBags) : null
             }
-            .Where(m => m != null)
+            .Where(b => b != null)
             .Skip(managersStartIndex)
             .ToArray();
 
@@ -70,8 +76,8 @@ namespace Melanchall.DryWetMidi.Interaction
                     continue;
                 }
 
-                var handlingManager = objectsBagsManagers.FirstOrDefault(m => m.TryAddObject(timedObject));
-                if (handlingManager == null)
+                var handlingBuilder = builders.FirstOrDefault(m => m.TryAddObject(timedObject));
+                if (handlingBuilder == null)
                 {
                     // TODO: policy
                     continue;

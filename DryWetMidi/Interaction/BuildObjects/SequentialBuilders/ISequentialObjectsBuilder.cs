@@ -1,6 +1,6 @@
 ﻿namespace Melanchall.DryWetMidi.Interaction
 {
-    internal interface IObjectsBagsManager
+    internal interface ISequentialObjectsBuilder
     {
         #region Methods
 

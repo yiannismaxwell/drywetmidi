@@ -15,7 +15,7 @@ namespace Melanchall.DryWetMidi.Tests.Interaction
         [TestCase(10, 2, 50, 50)]
         [TestCase(10, 10, 50, 100)]
         [TestCase(10, 2, 50, 100)]
-        public void BuildRests_NoSeparation(
+        public void BuildRests_NoSeparation_FromNotes(
             byte channel1,
             byte channel2,
             byte noteNumber1,
@@ -49,7 +49,7 @@ namespace Melanchall.DryWetMidi.Tests.Interaction
 
         [TestCase(10, 10)]
         [TestCase(10, 50)]
-        public void BuildRests_SeparateByChannel_SingleChannel(
+        public void BuildRests_SeparateByChannel_SingleChannel_FromNotes(
             byte noteNumber1,
             byte noteNumber2)
         {
@@ -78,7 +78,7 @@ namespace Melanchall.DryWetMidi.Tests.Interaction
 
         [TestCase(10, 10)]
         [TestCase(10, 50)]
-        public void BuildRests_SeparateByChannel_DifferentChannels(
+        public void BuildRests_SeparateByChannel_DifferentChannels_FromNotes(
             byte noteNumber1,
             byte noteNumber2)
         {
@@ -108,7 +108,7 @@ namespace Melanchall.DryWetMidi.Tests.Interaction
 
         [TestCase(10, 10)]
         [TestCase(10, 5)]
-        public void BuildRests_SeparateByNoteNumber_SingleNoteNumber(
+        public void BuildRests_SeparateByNoteNumber_SingleNoteNumber_FromNotes(
             byte channel1,
             byte channel2)
         {
@@ -135,7 +135,7 @@ namespace Melanchall.DryWetMidi.Tests.Interaction
 
         [TestCase(10, 10)]
         [TestCase(10, 5)]
-        public void BuildRests_SeparateByNoteNumber_DifferentNoteNumbers(
+        public void BuildRests_SeparateByNoteNumber_DifferentNoteNumbers_FromNotes(
             byte channel1,
             byte channel2)
         {
@@ -160,7 +160,7 @@ namespace Melanchall.DryWetMidi.Tests.Interaction
         }
 
         [Test]
-        public void BuildRests_SeparateByChannelAndNoteNumber()
+        public void BuildRests_SeparateByChannelAndNoteNumber_FromNotes()
         {
             var noteNumber1 = (SevenBitNumber)10;
             var noteNumber2 = (SevenBitNumber)100;
@@ -204,25 +204,25 @@ namespace Melanchall.DryWetMidi.Tests.Interaction
                 inputObjects: new ITimedObject[]
                 {
                     new TimedEvent(new NoteOnEvent((SevenBitNumber)noteNumber1, Note.DefaultVelocity) { Channel = (FourBitNumber)channel2 }, 10),
-                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel2 }, 10 + 100),
+                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel2 }, 110),
                     new TimedEvent(new NoteOnEvent((SevenBitNumber)noteNumber1, Note.DefaultVelocity) { Channel = (FourBitNumber)channel1 }, 30),
-                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel1 }, 30 + 100),
+                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel1 }, 130),
                     new TimedEvent(new NoteOnEvent((SevenBitNumber)noteNumber2, Note.DefaultVelocity) { Channel = (FourBitNumber)channel2 }, 300),
-                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber2, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel2 }, 300 + 50),
+                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber2, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel2 }, 350),
                     new TimedEvent(new NoteOnEvent((SevenBitNumber)noteNumber1, Note.DefaultVelocity) { Channel = (FourBitNumber)channel1 }, 1000),
-                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel1 }, 1000 + 500),
+                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel1 }, 1500),
                     new TimedEvent(new NoteOnEvent((SevenBitNumber)noteNumber2, Note.DefaultVelocity) { Channel = (FourBitNumber)channel2 }, 1200),
-                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber2, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel2 }, 1200 + 150),
+                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber2, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel2 }, 1350),
                     new TimedEvent(new NoteOnEvent((SevenBitNumber)noteNumber1, Note.DefaultVelocity) { Channel = (FourBitNumber)channel1 }, 1300),
-                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel1 }, 1300 + 1000),
+                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel1 }, 2300),
                     new TimedEvent(new NoteOnEvent((SevenBitNumber)noteNumber2, Note.DefaultVelocity) { Channel = (FourBitNumber)channel2 }, 10000),
-                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber2, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel2 }, 10000 + 1000),
+                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber2, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel2 }, 11000),
                     new TimedEvent(new NoteOnEvent((SevenBitNumber)noteNumber1, Note.DefaultVelocity) { Channel = (FourBitNumber)channel1 }, 100000),
-                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel1 }, 100000 + 1000),
+                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel1 }, 101000),
                     new TimedEvent(new NoteOnEvent((SevenBitNumber)noteNumber2, Note.DefaultVelocity) { Channel = (FourBitNumber)channel2 }, 100100),
-                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber2, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel2 }, 100100 + 10),
+                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber2, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel2 }, 100110),
                     new TimedEvent(new NoteOnEvent((SevenBitNumber)noteNumber1, Note.DefaultVelocity) { Channel = (FourBitNumber)channel1 }, 110000),
-                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel1 }, 110000 + 10),
+                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel1 }, 110010),
                 },
                 outputObjects: new ITimedObject[]
                 {
@@ -248,19 +248,19 @@ namespace Melanchall.DryWetMidi.Tests.Interaction
                 inputObjects: new ITimedObject[]
                 {
                     new TimedEvent(new NoteOnEvent((SevenBitNumber)noteNumber1, Note.DefaultVelocity) { Channel = channel }, 10),
-                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = channel }, 10 + 100),
+                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = channel }, 110),
                     new TimedEvent(new NoteOnEvent((SevenBitNumber)noteNumber1, Note.DefaultVelocity) { Channel = channel }, 30),
-                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = channel }, 30 + 100),
+                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = channel }, 130),
                     new TimedEvent(new NoteOnEvent((SevenBitNumber)noteNumber2, Note.DefaultVelocity) { Channel = channel }, 300),
-                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber2, SevenBitNumber.MinValue) { Channel = channel }, 300 + 50),
+                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber2, SevenBitNumber.MinValue) { Channel = channel }, 350),
                     new TimedEvent(new NoteOnEvent((SevenBitNumber)noteNumber1, Note.DefaultVelocity) { Channel = channel }, 1000),
-                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = channel }, 1000 + 500),
+                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = channel }, 1500),
                     new TimedEvent(new NoteOnEvent((SevenBitNumber)noteNumber2, Note.DefaultVelocity) { Channel = channel }, 1200),
-                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber2, SevenBitNumber.MinValue) { Channel = channel }, 1200 + 150),
+                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber2, SevenBitNumber.MinValue) { Channel = channel }, 1350),
                     new TimedEvent(new NoteOnEvent((SevenBitNumber)noteNumber1, Note.DefaultVelocity) { Channel = channel }, 1300),
-                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = channel }, 1300 + 1000),
+                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = channel }, 2300),
                     new TimedEvent(new NoteOnEvent((SevenBitNumber)noteNumber2, Note.DefaultVelocity) { Channel = channel }, 10000),
-                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber2, SevenBitNumber.MinValue) { Channel = channel }, 10000 + 1000),
+                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber2, SevenBitNumber.MinValue) { Channel = channel }, 11000),
                 },
                 outputObjects: new ITimedObject[]
                 {
@@ -285,17 +285,17 @@ namespace Melanchall.DryWetMidi.Tests.Interaction
                 inputObjects: new ITimedObject[]
                 {
                     new TimedEvent(new NoteOnEvent((SevenBitNumber)noteNumber1, Note.DefaultVelocity) { Channel = channel1 }, 10),
-                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = channel1 }, 10 + 100),
+                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = channel1 }, 110),
                     new TimedEvent(new NoteOnEvent((SevenBitNumber)noteNumber1, Note.DefaultVelocity) { Channel = channel2 }, 30),
-                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = channel2 }, 30 + 100),
+                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = channel2 }, 130),
                     new TimedEvent(new NoteOnEvent((SevenBitNumber)noteNumber2, Note.DefaultVelocity) { Channel = channel1 }, 300),
-                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber2, SevenBitNumber.MinValue) { Channel = channel1 }, 300 + 50),
+                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber2, SevenBitNumber.MinValue) { Channel = channel1 }, 350),
                     new TimedEvent(new NoteOnEvent((SevenBitNumber)noteNumber1, Note.DefaultVelocity) { Channel = channel2 }, 1000),
-                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = channel2 }, 1000 + 500),
+                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = channel2 }, 1500),
                     new TimedEvent(new NoteOnEvent((SevenBitNumber)noteNumber2, Note.DefaultVelocity) { Channel = channel1 }, 1200),
-                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber2, SevenBitNumber.MinValue) { Channel = channel1 }, 1200 + 150),
+                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber2, SevenBitNumber.MinValue) { Channel = channel1 }, 1350),
                     new TimedEvent(new NoteOnEvent((SevenBitNumber)noteNumber1, Note.DefaultVelocity) { Channel = channel2 }, 1300),
-                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = channel2 }, 1300 + 1000),
+                    new TimedEvent(new NoteOffEvent((SevenBitNumber)noteNumber1, SevenBitNumber.MinValue) { Channel = channel2 }, 2300),
                 },
                 outputObjects: new ITimedObject[]
                 {
@@ -320,17 +320,17 @@ namespace Melanchall.DryWetMidi.Tests.Interaction
                 inputObjects: new ITimedObject[]
                 {
                     new TimedEvent(new NoteOnEvent(noteNumber, Note.DefaultVelocity) { Channel = (FourBitNumber)channel2 }, 10),
-                    new TimedEvent(new NoteOffEvent(noteNumber, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel2 }, 10 + 100),
+                    new TimedEvent(new NoteOffEvent(noteNumber, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel2 }, 110),
                     new TimedEvent(new NoteOnEvent(noteNumber, Note.DefaultVelocity) { Channel = (FourBitNumber)channel1 }, 30),
-                    new TimedEvent(new NoteOffEvent(noteNumber, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel1 }, 30 + 100),
+                    new TimedEvent(new NoteOffEvent(noteNumber, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel1 }, 130),
                     new TimedEvent(new NoteOnEvent(noteNumber, Note.DefaultVelocity) { Channel = (FourBitNumber)channel2 }, 300),
-                    new TimedEvent(new NoteOffEvent(noteNumber, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel2 }, 300 + 50),
+                    new TimedEvent(new NoteOffEvent(noteNumber, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel2 }, 350),
                     new TimedEvent(new NoteOnEvent(noteNumber, Note.DefaultVelocity) { Channel = (FourBitNumber)channel1 }, 1000),
-                    new TimedEvent(new NoteOffEvent(noteNumber, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel1 }, 1000 + 500),
+                    new TimedEvent(new NoteOffEvent(noteNumber, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel1 }, 1500),
                     new TimedEvent(new NoteOnEvent(noteNumber, Note.DefaultVelocity) { Channel = (FourBitNumber)channel2 }, 1200),
-                    new TimedEvent(new NoteOffEvent(noteNumber, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel2 }, 1200 + 150),
+                    new TimedEvent(new NoteOffEvent(noteNumber, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel2 }, 1350),
                     new TimedEvent(new NoteOnEvent(noteNumber, Note.DefaultVelocity) { Channel = (FourBitNumber)channel1 }, 1300),
-                    new TimedEvent(new NoteOffEvent(noteNumber, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel1 }, 1300 + 1000),
+                    new TimedEvent(new NoteOffEvent(noteNumber, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel1 }, 2300),
                 },
                 outputObjects: new ITimedObject[]
                 {
@@ -354,13 +354,13 @@ namespace Melanchall.DryWetMidi.Tests.Interaction
                 inputObjects: new ITimedObject[]
                 {
                     new TimedEvent(new NoteOnEvent(noteNumber1, Note.DefaultVelocity) { Channel = (FourBitNumber)channel2 }, 0),
-                    new TimedEvent(new NoteOffEvent(noteNumber1, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel2 }, 0 + 100),
+                    new TimedEvent(new NoteOffEvent(noteNumber1, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel2 }, 100),
                     new TimedEvent(new NoteOnEvent(noteNumber2, Note.DefaultVelocity) { Channel = (FourBitNumber)channel1 }, 30),
-                    new TimedEvent(new NoteOffEvent(noteNumber2, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel1 }, 30 + 100),
+                    new TimedEvent(new NoteOffEvent(noteNumber2, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel1 }, 130),
                     new TimedEvent(new NoteOnEvent(noteNumber1, Note.DefaultVelocity) { Channel = (FourBitNumber)channel2 }, 300),
-                    new TimedEvent(new NoteOffEvent(noteNumber1, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel2 }, 300 + 50),
+                    new TimedEvent(new NoteOffEvent(noteNumber1, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel2 }, 350),
                     new TimedEvent(new NoteOnEvent(noteNumber2, Note.DefaultVelocity) { Channel = (FourBitNumber)channel1 }, 1000),
-                    new TimedEvent(new NoteOffEvent(noteNumber2, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel1 }, 1000 + 500),
+                    new TimedEvent(new NoteOffEvent(noteNumber2, SevenBitNumber.MinValue) { Channel = (FourBitNumber)channel1 }, 1500),
                 },
                 outputObjects: new ITimedObject[]
                 {
@@ -383,17 +383,17 @@ namespace Melanchall.DryWetMidi.Tests.Interaction
                 inputObjects: new ITimedObject[]
                 {
                     new TimedEvent(new NoteOnEvent(noteNumber1, Note.DefaultVelocity) { Channel = channel1 }, 10),
-                    new TimedEvent(new NoteOffEvent(noteNumber1, SevenBitNumber.MinValue) { Channel = channel1 }, 10 + 100),
+                    new TimedEvent(new NoteOffEvent(noteNumber1, SevenBitNumber.MinValue) { Channel = channel1 }, 110),
                     new TimedEvent(new NoteOnEvent(noteNumber2, Note.DefaultVelocity) { Channel = channel1 }, 30),
-                    new TimedEvent(new NoteOffEvent(noteNumber2, SevenBitNumber.MinValue) { Channel = channel1 }, 30 + 100),
+                    new TimedEvent(new NoteOffEvent(noteNumber2, SevenBitNumber.MinValue) { Channel = channel1 }, 130),
                     new TimedEvent(new NoteOnEvent(noteNumber1, Note.DefaultVelocity) { Channel = channel2 }, 300),
-                    new TimedEvent(new NoteOffEvent(noteNumber1, SevenBitNumber.MinValue) { Channel = channel2 }, 300 + 50),
+                    new TimedEvent(new NoteOffEvent(noteNumber1, SevenBitNumber.MinValue) { Channel = channel2 }, 350),
                     new TimedEvent(new NoteOnEvent(noteNumber2, Note.DefaultVelocity) { Channel = channel2 }, 1000),
-                    new TimedEvent(new NoteOffEvent(noteNumber2, SevenBitNumber.MinValue) { Channel = channel2 }, 1000 + 500),
+                    new TimedEvent(new NoteOffEvent(noteNumber2, SevenBitNumber.MinValue) { Channel = channel2 }, 1500),
                     new TimedEvent(new NoteOnEvent(noteNumber1, Note.DefaultVelocity) { Channel = channel1 }, 1200),
-                    new TimedEvent(new NoteOffEvent(noteNumber1, SevenBitNumber.MinValue) { Channel = channel1 }, 1200 + 150),
+                    new TimedEvent(new NoteOffEvent(noteNumber1, SevenBitNumber.MinValue) { Channel = channel1 }, 1350),
                     new TimedEvent(new NoteOnEvent(noteNumber2, Note.DefaultVelocity) { Channel = channel1 }, 1300),
-                    new TimedEvent(new NoteOffEvent(noteNumber2, SevenBitNumber.MinValue) { Channel = channel1 }, 1300 + 1000),
+                    new TimedEvent(new NoteOffEvent(noteNumber2, SevenBitNumber.MinValue) { Channel = channel1 }, 2300),
                 },
                 outputObjects: new ITimedObject[]
                 {

@@ -5,7 +5,7 @@ using Melanchall.DryWetMidi.Common;
 
 namespace Melanchall.DryWetMidi.Interaction
 {
-    internal sealed class RestsBuilder : IPostBuilder
+    internal sealed class RestsBuilder : IOverlayBuilder
     {
         #region Constants
 
@@ -20,7 +20,7 @@ namespace Melanchall.DryWetMidi.Interaction
             IEnumerable<ITimedObject> resultTimedObjects,
             ObjectsBuildingSettings settings)
         {
-            var notes = resultTimedObjects.OfType<Note>().Any()
+            var notes = settings.BuildNotes
                 ? resultTimedObjects.OfType<Note>()
                 : inputTimedObjects.BuildObjects(new ObjectsBuildingSettings { BuildNotes = true }).OfType<Note>();
 
