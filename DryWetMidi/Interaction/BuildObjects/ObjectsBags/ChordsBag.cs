@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Melanchall.DryWetMidi.Common;
 
 namespace Melanchall.DryWetMidi.Interaction
 {
@@ -10,6 +11,8 @@ namespace Melanchall.DryWetMidi.Interaction
         private readonly List<NotesBag> _notesBags = new List<NotesBag>();
 
         private long _chordStart = -1;
+        private FourBitNumber _chordChannel;
+        private bool _canObjectsBeAdded = true;
 
         #endregion
 
@@ -25,6 +28,8 @@ namespace Melanchall.DryWetMidi.Interaction
                 return _notesBags.All(b => b.IsCompleted);
             }
         }
+
+        public override bool CanObjectsBeAdded => _canObjectsBeAdded;
 
         #endregion
 
@@ -45,7 +50,7 @@ namespace Melanchall.DryWetMidi.Interaction
 
         public override bool TryAddObject(ITimedObject timedObject, ObjectsBuildingSettings settings)
         {
-            if (IsCompleted)
+            if (!CanObjectsBeAdded)
                 return false;
 
             return TryAddTimedEvent(timedObject as TimedEvent, settings) ||
@@ -89,16 +94,22 @@ namespace Melanchall.DryWetMidi.Interaction
                 return false;
 
             var newNoteTime = bag.Time;
+            var newNoteChannel = bag.NoteId.Channel;
+
             if (_chordStart < 0)
             {
                 _notesBags.Add(bag);
                 _chordStart = newNoteTime;
+                _chordChannel = newNoteChannel;
                 return true;
             }
             else
             {
-                if (newNoteTime - _chordStart > settings.ChordBuilderSettings.NotesTolerance)
+                if (newNoteTime - _chordStart > settings.ChordBuilderSettings.NotesTolerance || newNoteChannel != _chordChannel)
+                {
+                    _canObjectsBeAdded = false;
                     return false;
+                }
 
                 _notesBags.Add(bag);
                 return true;

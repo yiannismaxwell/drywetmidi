@@ -20,7 +20,8 @@ namespace Melanchall.DryWetMidi.Tests.Interaction
                 },
                 outputObjects: new ITimedObject[]
                 {
-                    new Chord(new Note((SevenBitNumber)50)),
+                    new Chord(
+                        new Note((SevenBitNumber)50)),
                 });
         }
 
@@ -32,14 +33,54 @@ namespace Melanchall.DryWetMidi.Tests.Interaction
                 {
                     new Note((SevenBitNumber)50),
                     new Note((SevenBitNumber)70),
-                    new Note((SevenBitNumber)70, 100, 0),
+                    new Note((SevenBitNumber)90, 100, 0),
                 },
                 outputObjects: new ITimedObject[]
                 {
                     new Chord(
                         new Note((SevenBitNumber)50),
                         new Note((SevenBitNumber)70),
-                        new Note((SevenBitNumber)70, 100, 0)),
+                        new Note((SevenBitNumber)90, 100, 0)),
+                });
+        }
+
+        [Test]
+        public void BuildChords_FromNotes_MultipleNotes_ExceedingNotesTolerance()
+        {
+            CheckBuildingChords(
+                inputObjects: new ITimedObject[]
+                {
+                    new Note((SevenBitNumber)50),
+                    new Note((SevenBitNumber)70),
+                    new Note((SevenBitNumber)90, 100, 20),
+                },
+                outputObjects: new ITimedObject[]
+                {
+                    new Chord(
+                        new Note((SevenBitNumber)50),
+                        new Note((SevenBitNumber)70)),
+                    new Chord(
+                        new Note((SevenBitNumber)90, 100, 20)),
+                });
+        }
+
+        [Test]
+        public void BuildChords_FromNotes_MultipleNotes_DifferentChannels()
+        {
+            CheckBuildingChords(
+                inputObjects: new ITimedObject[]
+                {
+                    new Note((SevenBitNumber)50),
+                    new Note((SevenBitNumber)70),
+                    new Note((SevenBitNumber)90) { Channel = (FourBitNumber)1 },
+                },
+                outputObjects: new ITimedObject[]
+                {
+                    new Chord(
+                        new Note((SevenBitNumber)50),
+                        new Note((SevenBitNumber)70)),
+                    new Chord(
+                        new Note((SevenBitNumber)90) { Channel = (FourBitNumber)1 }),
                 });
         }
 

@@ -14,6 +14,8 @@ namespace Melanchall.DryWetMidi.Interaction
 
         public abstract bool IsCompleted { get; }
 
+        public abstract bool CanObjectsBeAdded { get; }
+
         #endregion
 
         #region Methods

@@ -32,7 +32,7 @@ namespace Melanchall.DryWetMidi.Interaction
             var handlingBag = _uncompletedBags.FirstOrDefault(b => b.TryAddObject(timedObject, _settings));
             if (handlingBag != null)
             {
-                if (handlingBag.IsCompleted)
+                if (!handlingBag.CanObjectsBeAdded)
                     _uncompletedBags.Remove(handlingBag);
 
                 return true;
@@ -46,7 +46,7 @@ namespace Melanchall.DryWetMidi.Interaction
             {
                 _objectsBags.Add(bag);
 
-                if (!bag.IsCompleted)
+                if (bag.CanObjectsBeAdded)
                     _uncompletedBags.Add(bag);
             }
 

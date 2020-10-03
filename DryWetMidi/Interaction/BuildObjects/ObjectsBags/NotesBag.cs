@@ -10,17 +10,15 @@ namespace Melanchall.DryWetMidi.Interaction
 
         private TimedEvent _timedNoteOnEvent;
         private TimedEvent _timedNoteOffEvent;
+        private NoteId _noteId;
 
         #endregion
 
         #region Properties
 
-        public long Time
-        {
-            get { return _timedNoteOnEvent != null ? _timedNoteOnEvent.Time : -1; }
-        }
+        public long Time => _timedNoteOnEvent?.Time ?? (_timedObjects.FirstOrDefault()?.Time ?? -1);
 
-        public NoteId NoteId { get; private set; }
+        public NoteId NoteId => _noteId ?? (_timedObjects.FirstOrDefault() as Note)?.GetNoteId();
 
         public override bool IsCompleted
         {
@@ -32,6 +30,8 @@ namespace Melanchall.DryWetMidi.Interaction
                 return _timedNoteOnEvent != null && _timedNoteOffEvent != null;
             }
         }
+
+        public override bool CanObjectsBeAdded => !IsCompleted;
 
         #endregion
 
@@ -73,7 +73,7 @@ namespace Melanchall.DryWetMidi.Interaction
                             return false;
 
                         _timedNoteOnEvent = timedEvent;
-                        NoteId = ((NoteOnEvent)timedEvent.Event).GetNoteId();
+                        _noteId = ((NoteOnEvent)timedEvent.Event).GetNoteId();
                         break;
                     }
                 case MidiEventType.NoteOff:
@@ -82,7 +82,7 @@ namespace Melanchall.DryWetMidi.Interaction
                             return false;
 
                         var noteId = ((NoteOffEvent)timedEvent.Event).GetNoteId();
-                        if (!noteId.Equals(NoteId))
+                        if (!noteId.Equals(_noteId))
                             return false;
 
                         _timedNoteOffEvent = timedEvent;

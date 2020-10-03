@@ -13,6 +13,8 @@ namespace Melanchall.DryWetMidi.Interaction
             get { return _timedObjects.Any(); }
         }
 
+        public override bool CanObjectsBeAdded => !IsCompleted;
+
         #endregion
 
         #region Methods
