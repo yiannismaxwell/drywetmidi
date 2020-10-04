@@ -107,7 +107,7 @@ namespace Melanchall.DryWetMidi.Interaction
             {
                 if (newNoteTime - _chordStart > settings.ChordBuilderSettings.NotesTolerance || newNoteChannel != _chordChannel)
                 {
-                    _canObjectsBeAdded = false;
+                    _canObjectsBeAdded = !IsCompleted;
                     return false;
                 }
 
